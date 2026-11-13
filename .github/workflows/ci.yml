@@ -1,0 +1,22 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [17, 21]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - run: ./build.sh test
+      - name: Sample outputs are up to date
+        run: |
+          J="java -cp out/main dev.jvch.radar.Main"
+          $J report samples/scan-2026-02-22.xml --format md > /tmp/r.md || test $? -eq 1
+          diff /tmp/r.md docs/sample-report.md
+          $J diff samples/scan-2026-02-01.xml samples/scan-2026-02-22.xml > /tmp/d.md || test $? -eq 1
+          diff /tmp/d.md docs/sample-diff.md
